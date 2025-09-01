@@ -1,14 +1,12 @@
+from collections import Counter
+
+
 class Article:
     all = []  # class variable to track all articles
 
     def __init__(self, author, magazine, title):
-        if not isinstance(author, Author):
-            raise Exception("Author must be an Author")
-        if not isinstance(magazine, Magazine):
-            raise Exception("Magazine must be a Magazine")
-
-        self.author = author
-        self.magazine = magazine
+        self.author = author      # goes through property setter
+        self.magazine = magazine  # goes through property setter
 
         if not isinstance(title, str) or not (5 <= len(title) <= 50):
             raise Exception("Title must be string 5–50 chars")
@@ -17,6 +15,7 @@ class Article:
         # Add each new article to the class-level list
         Article.all.append(self)
 
+    # ----- Properties -----
     @property
     def title(self):
         return self._title
@@ -25,6 +24,26 @@ class Article:
     def title(self, value):
         # Ignore attempts to reset title
         pass
+
+    @property
+    def author(self):
+        return self._author
+
+    @author.setter
+    def author(self, value):
+        if not isinstance(value, Author):
+            raise Exception("Author must be an Author instance")
+        self._author = value
+
+    @property
+    def magazine(self):
+        return self._magazine
+
+    @magazine.setter
+    def magazine(self, value):
+        if not isinstance(value, Magazine):
+            raise Exception("Magazine must be a Magazine instance")
+        self._magazine = value
 
 
 class Author:
@@ -44,7 +63,7 @@ class Author:
         # Ignore any attempts to change name (immutability)
         pass
 
-    # 🔹 Required methods
+    # ----- Required methods -----
     def articles(self):
         return [article for article in Article.all if article.author == self]
 
@@ -61,6 +80,8 @@ class Author:
 
 
 class Magazine:
+    all = []  # track all magazines
+
     def __init__(self, name, category):
         if not isinstance(name, str) or not (2 <= len(name) <= 16):
             raise Exception("Name must be a string 2–16 chars")
@@ -69,14 +90,15 @@ class Magazine:
 
         self._name = name
         self._category = category
+        Magazine.all.append(self)
 
+    # ----- Properties -----
     @property
     def name(self):
         return self._name
 
     @name.setter
     def name(self, value):
-        # ✅ silently ignore bad values instead of raising
         if isinstance(value, str) and 2 <= len(value) <= 16:
             self._name = value
 
@@ -86,10 +108,10 @@ class Magazine:
 
     @category.setter
     def category(self, value):
-        # ✅ silently ignore bad values instead of raising
         if isinstance(value, str) and len(value) > 0:
             self._category = value
 
+    # ----- Relationships -----
     def articles(self):
         return [article for article in Article.all if article.magazine == self]
 
@@ -97,9 +119,18 @@ class Magazine:
         return list({article.author for article in self.articles()})
 
     def article_titles(self):
-        return [article.title for article in self.articles()] or None
+        titles = [article.title for article in self.articles()]
+        return titles or None
 
     def contributing_authors(self):
-        # authors who have written more than 2 articles for this magazine
         authors = [article.author for article in self.articles()]
-        return list({author for author in authors if authors.count(author) > 2}) or None
+        counts = Counter(authors)
+        result = [author for author, count in counts.items() if count > 2]
+        return result or None
+
+    # ----- Bonus -----
+    @classmethod
+    def top_publisher(cls):
+        if not Article.all:
+            return None
+        return max(cls.all, key=lambda mag: len(mag.articles()))
